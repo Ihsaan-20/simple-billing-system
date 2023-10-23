@@ -1,0 +1,283 @@
+<?php include_once 'include/header.php'; ?>
+
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0 text-dark">Create a invoice</h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <!-- <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="#">Home</a></li>
+            <li class="breadcrumb-item active">Dashboard v1</li>
+          </ol> -->
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid" id="">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <!-- <div class="card-header">
+                <h3 class="card-title">All admin list here</h3>
+              </div> -->
+                        <!-- /.card-header -->
+                        <div class="card-body"  >
+                            <?php alertMessage(); ?>
+                            <form action="invoice_process.php" method="POST" enctype="multipart/form-data">
+                                <div class="row">
+                                    <div class="col-4">
+                                        <div class="form-group">
+                                            <label>Item Name <span class="text-danger">*</span></label>
+                                            <select class="form-control select2bs4" name="item_id" style="width: 100%;">
+                                                <?php
+                                                $items = getAll('items');
+                                                if (!$items) {
+                                                    echo '<h5> Ops! something went wrong...</h5>';
+                                                    return false;
+                                                }
+                                                if (mysqli_num_rows($items) > 0) {
+                                                ?>
+                                                    <option value="" selected="selected" disabled>Select item</option>
+                                                    <?php foreach ($items as $key => $value) : ?>
+                                                        <option value="<?= $value['id'] ?>"><?= $value['item_name'] ?></option>
+                                                    <?php endforeach; ?>
+
+                                                <?php
+                                                }
+                                                ?>
+                                            </select>
+                                        </div>
+                                        <!-- /.form-group -->
+                                    </div>
+
+                                    <div class="col-4">
+                                        <div class="form-group mb-3">
+                                            <div class="form-group">
+                                                <label>Select Unit <span class="text-danger">*</span></label>
+                                                <select class="form-control" name="unit" style="width: 100%;">
+                                                    <option value="" selected="selected" disabled>Select Unit</option>
+                                                    <option value="Ptk">Pkt</option>
+                                                    <option value="Ctn">Ctn</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-4">
+                                        <div class="form-group mb-3">
+                                            <div class="form-group">
+                                                <label>Quantity <span class="text-danger">*</span></label>
+                                                <input type="number" name="quantity" value="1" placeholder="1" min="1" class="form-control">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="float-right">
+                                            <button type="submit" name="addItem" class="btn btn-primary mr-2 px-4">Add Item</button>
+                                            <a href="invoices.php" class="btn btn-light px-3">Go back</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                    <!-- /.card -->
+                </div>
+                <!-- /.col -->
+            </div>
+            <!-- /.row -->
+
+
+
+                <div class="row" >
+                    <div class="col-12">
+                        <!-- show item card -->
+                        <div class="card mt-3" id="billingCard">
+                            <!-- <div class="card-header">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="heading mr-2">
+                                            <h4>Items</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> -->
+                        
+                            <?php
+                            if (isset($_SESSION['productItems'])) 
+                            {
+                                $sessionItems = $_SESSION['productItems'];
+                                if (empty($sessionItems)) {
+                                    unset($_SESSION['productItems']);
+                                    unset($_SESSION['productItemIds']);
+                                }
+                            ?>
+                            <div class="card-body" id="itemArea">
+                                <div class="table table-responsive mb-3" >
+                                    <table class="table table-bordered table-hover">
+                                        <thead>
+                                            <tr style="background-color: #dee2e66b;">
+                                                <th>#</th>
+                                                <th>Item Name</th>
+                                                <th>Unit</th>
+                                                <th>Price/Unit</th>
+                                                <th>Quantity</th>
+                                                <th>Total Price</th>
+                                                <th>Remove</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php
+                                            $count = 1;
+                                            foreach ($sessionItems as $key => $item) :
+
+                                            ?>
+                                                <tr>
+                                                    <td><?= $count++ ?></td>
+
+                                                    <td><?= $item['item_name'] ?? ''; ?></td>
+                                                    <td><?= $item['unit'] ?? ''; ?></td>
+                                                    <td><?= $item['price'] ?? ''; ?></td>
+                                                    <td>
+                                                        <div class="input-group qtyBox">
+                                                            <button class="input-group-text  btn-sm mb-1 dec">-</button>
+                                                            <input type="hidden" class="item_id" value="<?= $item['item_id'] ?? ''; ?>">
+                                                            <input type="text" value="<?= $item['quantity'] ?? ''; ?>" class="qty quantityInput" style="width:50px!important; padding:6px 3px; text-align:center;border:1px solid #cfb1b1; outline:0; margin:0 3px 2px 2px;border-radius:5px" />
+                                                            <button class="input-group-text btn-sm mb-1 inc">+</button>
+                                                        </div>
+
+                                                    </td>
+                                                    <td>
+                                                        <?= isset($item['price']) && isset($item['quantity']) ? number_format($item['price'] * $item['quantity'], 0) : ''; ?>
+
+                                                    </td>
+                                                    <td>
+                                                        <a href="order-item-delete.php?index=<?= $key; ?>" class="btn btn-danger">Remove</a>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                    <?php
+                } 
+                ?>
+                <?php 
+                if(!empty($sessionItems)){
+                    ?>
+                     <!-- row -->
+                     <div class="row" id="customerRow">
+                        <div class="col-lg-6 col-sm-12">
+                            <div class="form-group">
+                            <select class="form-control" id="payment_method" onchange="store_key('payment_method', this.value)" name="payment_method" style="width: 100%;">
+                                <option value="" selected="selected" disabled>Select payment</option>
+                                <option value="cash" <?= (isset($_SESSION['payment_method']) && $_SESSION['payment_method'] === 'cash') ? 'selected' : ''; ?>>Cash Payment</option>
+                                <option value="online" <?= (isset($_SESSION['payment_method']) && $_SESSION['payment_method'] === 'online') ? 'selected' : ''; ?>>Online Payment</option>
+                            </select>
+
+                            </div>
+                        </div>
+
+                            <div class="col-lg-6 col-sm-12">
+                                <div class="form-group">
+                                    <select class="form-control select2bs4" id="customer_id" onchange="store_key('customer_id', this.value)" name="customer_id" style="width: 100%;">
+                                        <option value="" selected="selected" disabled>Select customer</option>
+                                        <?php foreach ($customers = getAll('customers') as $key => $customer) : 
+                                            ?>
+                                             <option value="<?= $customer['id'] ?>" <?= (isset($_SESSION['customer_id']) && $_SESSION['customer_id'] === $customer['id']) ? 'selected' : ''; ?>><?= $customer['customer_name'] ?></option>
+
+
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+
+
+
+                        <div class="col-lg-12">
+                            <div class="float-right">
+                                <button class="btn btn-primary mr-2 addNewCustomer"> + Customer</button>
+                                <button class="btn btn-success px-5 order_now">Order</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- row end -->
+                    <?php
+                }
+                
+                ?>
+                            </div>
+                        </div>
+                        <!-- show item card end-->
+                    </div>
+                </div>
+                <!-- second row end here -->
+        </div>
+
+
+
+
+        <!-- add customer modal -->
+        <div class="modal" id="addNewCustomerModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add New Customer</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="">Customer Name</label>
+                            <input type="text" class="form-control" id="customer_name" placeholder="Enter customer name...">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="">Customer Phone</label>
+                            <input type="text" class="form-control" id="customer_phone" placeholder="Enter customer phone...">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="">Customer Address</label>
+                            <input type="text" class="form-control" id="customer_address" placeholder="Enter customer address...">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="">Customer Shop Name</label>
+                            <input type="text" class="form-control" id="customer_shop_name" placeholder="Enter customer shop name...">
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary saveCustomerBtn">Add New Customer</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- add customer modal end here-->
+    </section>
+    <!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+
+<?php include_once 'include/footer.php'; ?>

@@ -1,0 +1,230 @@
+
+
+
+$(document).ready(function() {
+      $(document).on('click', '.inc', function () {
+        var quantityInput = $(this).closest('.qtyBox').find('.qty');
+        var item_id = $(this).closest('.qtyBox').find('.item_id').val();
+        var currentValue = parseInt(quantityInput.val()); // Fixed the variable name here
+    
+        
+    
+        if (!isNaN(currentValue)) {
+            var qtyVal = currentValue + 1;
+            quantityInput.val(qtyVal);
+            quantityIncDec(item_id, qtyVal);
+        }
+    
+        
+    });
+    
+    $(document).on('click', '.dec', function () {
+        var quantityInput = $(this).closest('.qtyBox').find('.qty');
+        var item_id = $(this).closest('.qtyBox').find('.item_id').val();
+        var currentValue = parseInt(quantityInput.val()); // Fixed the variable name here
+    
+        if (!isNaN(currentValue) && currentValue > 1) {
+            var qtyVal = currentValue - 1;
+            quantityInput.val(qtyVal);
+            quantityIncDec(item_id, qtyVal);
+    
+        }
+    });
+    
+    function quantityIncDec(item_id, qty)
+    {
+        $.ajax({
+            type: "POST",
+            url: "invoice_process.php",
+            data: {
+                'itemIncDec' : true,
+                'item_id' : item_id,
+                'quantity' : qty
+            },
+            success: function (response) {
+                var res = JSON.parse(response);
+                console.log(res);
+                
+                if(res.status == 200)
+                {
+                    $('#billingCard').load(' #itemArea');
+                    toastr.success(res.message);
+    
+                }
+                else
+                {
+                    $('#billingCard').load(' #itemArea');
+                    toastr.error(res.message);
+                }
+            }
+        });
+    }//end function;
+    
+    $('.addNewCustomer').on('click', function(){
+        $('#addNewCustomerModal').modal('show');
+    });
+    
+    $('.saveCustomerBtn').on('click', function(){
+        
+        var customer_name = $('#customer_name').val();
+        var customer_phone = $('#customer_phone').val();
+        var customer_address = $('#customer_address').val();
+        var customer_shop_name = $('#customer_shop_name').val();
+
+        if( customer_name == '' || customer_phone == '' || customer_address == '' || customer_shop_name == '' )
+        {
+            swal.fire("Empty fields not allowed!", "please complete all the fields","warning");
+            return false;
+        }
+        else
+        {
+            if($.isNumeric(customer_phone))
+            {
+                var data = {
+                    'saveCustomerData' : true,
+                    'customer_name': customer_name,
+                    'customer_phone': customer_phone,
+                    'customer_address': customer_address,
+                    'customer_shop_name': customer_shop_name,
+                };
+
+                $.ajax({
+                    type: "POST",
+                    url: "invoice_process.php",
+                    data: data, // Send the FormData object directly
+                    success: function (response) {
+                        var res = JSON.parse(response);
+                        console.log(res);
+                    
+                        if (res.status == 200) 
+                        {
+                            Swal.fire(res.message, res.message, res.status_type); // Use Swal.fire correctly
+                            $('#addNewCustomerModal').modal('hide');
+                            $('#customer_name').val(''); // Set value to an empty string
+                            $('#customer_phone').val(''); // Set value to an empty string
+                            $('#customer_address').val(''); // Set value to an empty string
+                            $('#customer_shop_name').val(''); // Set value to an empty string
+                        }
+                        else if(res.status == 422)
+                        {
+                            Swal.fire(res.message, res.message, res.status_type); // Use Swal.fire correctly
+
+                        } 
+                        else 
+                        {
+                            Swal.fire(res.message, res.message, res.status_type); // Use Swal.fire correctly
+                        }
+                    }
+                    
+                });
+
+            }else
+            {
+                swal.fire("Phone number not valid", "please enter a valid customer phone number","warning");
+            }
+        }
+
+        
+    });
+    
+
+    $(document).on('click', '.order_now', function () {
+
+        var payment_method = $('#payment_method').val();
+        var customer_id = $('#customer_id').val();
+
+        // alert(payment_method);
+        // alert(customer_id);
+
+        if(payment_method == null)
+        {
+            swal.fire("Payment method not selected", "Please select your payment method first!", "warning");
+            return false;
+        }
+
+        if(customer_id == null)
+        {
+            swal.fire("Customer name not selected!", "Please select customer name!", "warning");
+            return false;
+        }
+        
+        var data = {
+            'order_now' : true,
+            'payment_method': payment_method,
+            'customer_id' : customer_id,
+        };
+
+        $.ajax({
+            type: "POST",
+            url: "invoice_process.php",
+            data: data,
+            success: function (response) {
+                var res = JSON.parse(response);
+        
+                if (res.status == 200) {
+                    window.location.href = "order-summary.php";
+                }
+                else if (res.status == 404) {
+                    swal.fire("Customer Not Found!", "Please add customer!", "warning");
+                }
+            }
+        });
+    });
+
+
+    $(document).on('click', '#saveOrder', function () { 
+
+        $.ajax({
+            type: "POST",
+            url: "invoice_process.php",
+            data: {
+                'saveOrder' : true
+            },
+            success: function (res) {
+                var res = JSON.parse(response);
+                if (res.status == 200) {
+
+                    Swal.fire({
+                        title: '<strong>' + res.message + '</strong>',
+                        icon: res.status_type,
+                        html:
+                            '<a href="create-invoice.php" class="btn btn-info">Close</a> ' +
+                            '<a href="#" class="btn btn-primary" id="printButton">Print</a> ' +
+                            '<a href="#" class="btn btn-success" id="downloadButton">Download</a> ',
+                        showCloseButton: false,
+                        showCancelButton: false,
+                        focusConfirm: false,
+                        
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Redirect to a particular page when "OK" is pressed
+                            window.location.href = 'invoices.php';
+                        }
+                    });
+                    
+                    // Event listener for the "Print" button
+                    document.getElementById('printButton').addEventListener('click', function() {
+                        // Handle the "Print" action here
+                        // Optionally, you can add code to print the content
+                        // For example, you can use window.print() to open the print dialog.
+                    });
+                    
+                    // Event listener for the "Download" button
+                    document.getElementById('downloadButton').addEventListener('click', function() {
+                        // Handle the "Download" action here
+                        // Optionally, you can add code to trigger a download.
+                    });
+                    
+                    
+
+                }
+                else if (res.status == 404) {
+                    swal.fire("Customer Not Found!", "Please add customer!", "warning");
+                }                
+            }
+        });
+    });
+
+
+});//document.ready end here;
+
